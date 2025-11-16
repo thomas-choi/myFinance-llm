@@ -1,0 +1,58 @@
+version: '3.8'
+
+services:
+  data-prep:
+    build: .
+    image: market-predictor
+    volumes:
+      - ./data:/app/data
+    command: python src/data_prep.py --tickers AAPL,GOOG --output data/prepared_data.csv --n 60
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              capabilities: [gpu]
+
+  predict-baseline:
+    build: .
+    image: market-predictor
+    volumes:
+      - ./data:/app/data
+      - ./metrics:/app/metrics
+    command: python src/predict.py --model_name google/timesfm-1.0-200m --data data/prepared_data.csv --eval --output metrics/baseline_metrics.json
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              capabilities: [gpu]
+
+  finetune:
+    build: .
+    image: market-predictor
+    volumes:
+      - ./data:/app/data
+      - ./models:/app/models
+    command: python src/finetune.py --model_name google/timesfm-1.0-200m --data data/prepared_data.csv --output_dir models/finetuned --epochs 5
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              capabilities: [gpu]
+
+  predict-finetuned:
+    build: .
+    image: market-predictor
+    volumes:
+      - ./data:/app/data
+      - ./models:/app/models
+      - ./metrics:/app/metrics
+    command: python src/predict.py --model_name models/finetuned --data data/prepared_data.csv --eval --output metrics/finetuned_metrics.json
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              capabilities: [gpu]
