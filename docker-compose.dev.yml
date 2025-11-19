@@ -1,0 +1,28 @@
+services:
+  dev:
+    build:
+      context: .
+      args:
+        UID: ${USER_UID:-1000}
+        GID: ${USER_GID:-1000}
+        USERNAME: ${USERNAME:-developer}
+    image: market-predictor:dev
+    container_name: myfinance-dev
+    volumes:
+      # Mount entire project folder for live file sync
+      - .:/app
+      - /app/__pycache__
+      - /app/.pytest_cache
+      - /app/venv
+    working_dir: /app
+    stdin_open: true
+    tty: true
+    environment:
+      - PYTHONUNBUFFERED=1
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              capabilities: [gpu]
+    command: bash

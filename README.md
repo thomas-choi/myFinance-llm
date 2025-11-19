@@ -5,7 +5,7 @@ Below is the complete starter repository for the task. I've structured it as a G
 ## Suggested Models
 Based on the hardware constraints (Ubuntu host with 32GB RAM and RTX 3060 GPU with 12GB VRAM), I suggest the following 4 open-source time series forecasting models available on Hugging Face. These are lightweight (under 1B parameters), support multivariate time series (for OHLCV data), can be downloaded locally, and fine-tuned for forecasting. They can predict future OHLCV values, from which we derive the UP/DOWN/SIDEWAY label:
 
-1. **google/timesfm-1.0-200m** (200M parameters): A time series foundation model from Google, efficient for forecasting.
+1. **google/timesfm-2.5-200m-pytorch** (200M parameters): A time series foundation model from Google, efficient for forecasting (timesfm==2.0.0).
 2. **time-series-foundation-models/Lag-Llama** (small transformer-based): Probabilistic univariate/multivariate forecaster.
 3. **ibm-granite/granite-timeseries-ttm-r2** (<1M parameters): Tiny Time Mixers from IBM, very lightweight and fast.
 4. **Melady/TEMPO** (foundation model): Open-source time series model for forecasting tasks.
@@ -31,7 +31,7 @@ These are downloadable from Hugging Face and suitable for a Ubuntu host with 32G
 market_predictor/
 ├── README.md                # This file
 ├── Dockerfile               # Docker build file
-├── docker-compose.yml       # Compose file for sub-tasks
+├── docker-compose.yml       # Compose file for sub-tasks (use 'docker compose' command)
 ├── requirements.txt         # Python dependencies
 ├── data/                    # Directory for downloaded/prepared data (add to .gitignore if needed)
 │   └── .gitignore           # Ignore large data files
@@ -82,42 +82,69 @@ pip install timesfm==1.3.0 --ignore-requires-python
 * Test with `python -c "import torch; print(torch.cuda.is_available())"` — it should return True.
 
 ## Steps to Create a Docker Container
-1. Build the image: `docker build -t market-predictor .` for CUDA 12.0 and cuDNN8.
-   or
-   uild the image: `docker build -f Dockerfile.12.3 -t market-predictor .` for CUDA 12.3 and cuDNN9
-2. Run interactively: `docker run -it --gpus all -v $(pwd)/data:/app/data -v $(pwd)/models:/app/models market-predictor bash`
+1. Build the image: 
+`
+docker build -t market-predictor .
+` for CUDA 12.0 and cuDNN8.
+or 
+build the image: 
+`
+docker build -f Dockerfile.12.3 -t market-predictor .
+` for CUDA 12.3 and cuDNN9
+2. Run interactively: 
+`
+docker run --rm -it --gpus all -v $(pwd)/data:/app/data -v $(pwd)/models:/app/models market-predictor bash
+`
 
-Alternatively, use docker-compose for sub-tasks (see below).
+Alternatively, use docker compose for sub-tasks (see below).
+
+## Basic Commands
+
 
 ## Steps to Execute the Application to Produce Performance Metrics
-1. Prepare data: 
+
+#### 1. Prepare data: 
 `python src/data_prep.py --tickers AAPL,GOOG --output data/prepared_data.csv --n 60`
-2. Run baseline prediction/evaluation: 
-`python src/predict.py --model_name google/timesfm-1.0-200m --data data/prepared_data.csv --eval --output metrics/baseline_metrics.json`
+ 
+#### 2. Run baseline prediction/evaluation: 
+
+###### Evaluate model on test data
    - This uses the pre-trained model on a test split, computes accuracy/F1 for UP/DOWN/SIDEWAY predictions.
 
-## Steps to Fine-Tune a Base Model
-1. Prepare data (as above).
-2. Fine-tune: `python src/finetune.py --model_name google/timesfm-1.0-200m --data data/prepared_data.csv --output_dir models/finetuned --epochs 5`
+   - Evaluate TimesFM on test data
+```bash
+python src/predict.py --model timesfm --data data/prepared_data.csv --eval --output metrics.json
+```
+
+   - Evaluate Lag-Llama on test data
+```bash
+python3 src/predict.py --model lag_llama --data data/prepared_data.csv --eval --output metrics.json
+```
+
+   - Make single prediction with TimesFM
+```bash
+python src/predict.py --model timesfm --data data/prepared_data.csv --predict --sample 0
+```
+
+   - Make single prediction with Lag-Llama
+```bash
+python src/predict.py --model lag_llama --data data/prepared_data.csv --predict --sample 5
+```
+
+### 3. Steps to Fine-Tune a Base Model
+
+  - Prepare data (as above).
+  - Fine-tune: 
+`
+python src/finetune.py --model_name google/timesfm-1.0-200m --data data/prepared_data.csv --output_dir models/finetuned --epochs 5
+`
    - This fine-tunes for forecasting, saving to `models/`.
 
-## Steps to Compare Performance Metrics
-1. Run baseline metrics (as above).
-2. Fine-tune (as above).
-3. Run fine-tuned evaluation: `python src/predict.py --model_name models/finetuned --data data/prepared_data.csv --eval --output metrics/finetuned_metrics.json`
-4. Compare manually (e.g., diff the JSON files) or add a custom script to compute deltas in accuracy/F1.
-
-Run sub-tasks with `docker-compose run data-prep`, etc.
-
-## Python Applications
-
-### src/utils.py
-
-### src/data_prep.py
-
-### src/predict.py
-
-### src/finetune.py
+### 4. Steps to Compare Performance Metrics
+   - Run baseline metrics (as above).
+   - Fine-tune (as above).
+   - Run fine-tuned evaluation: `python src/predict.py --model_name models/finetuned - - data data/prepared_data.csv --eval --output metrics/finetuned_metrics.json`
+   - Compare manually (e.g., diff the JSON files) or add a custom script to compute deltas in accuracy/F1.
 
 **Notes**: 
 - The scripts use placeholders for model-specific processing (e.g., `processor`, `generate`). Adapt based on the exact model docs (e.g., TimesFM has custom usage; see HF page).

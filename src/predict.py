@@ -1,11 +1,12 @@
 import argparse
+import ast
 import numpy as np
 import pandas as pd
 import json
 from sklearn.metrics import accuracy_score, f1_score
 from utils import derive_label
 from model_registry import ModelRegistry
-
+import re
 
 def load_data(data_path: str) -> pd.DataFrame:
     """
@@ -18,8 +19,78 @@ def load_data(data_path: str) -> pd.DataFrame:
         DataFrame with parsed windows
     """
     df = pd.read_csv(data_path)
-    df['window'] = df['window'].apply(eval)  # Convert string lists back to lists
+    
+    # Convert string representation of nested lists back to actual lists
+    def parse_window(window_str):
+        if not isinstance(window_str, str):
+            return window_str
+        
+        window_str = window_str.strip()
+        
+        if not window_str or window_str == '[]':
+            return []
+        
+        # 1. Try ast.literal_eval first (works for normal Python str(list))
+        try:
+            return ast.literal_eval(window_str)
+        except (ValueError, SyntaxError):
+            pass
+        
+        # 2. Try json.loads (works if the data was saved with json.dumps)
+        try:
+            return json.loads(window_str)
+        except json.JSONDecodeError:
+            pass
+        
+        # 3. Handle common data issues: nan, inf, -inf
+        fixed_str = re.sub(r'\bnan\b', 'float("nan")', window_str, flags=re.IGNORECASE)
+        fixed_str = re.sub(r'\binf\b', 'float("inf")', fixed_str, flags=re.IGNORECASE)
+        fixed_str = re.sub(r'-inf\b', 'float("-inf")', fixed_str, flags=re.IGNORECASE)
+        
+        # 4. Safe eval with minimal namespace for Timestamp and float
+        safe_globals = {
+            "__builtins__": {"float": float},
+            "Timestamp": pd.Timestamp
+        }
+        try:
+            return eval(fixed_str, safe_globals)
+        except Exception as e:
+            raise ValueError(f"Could not parse window: {window_str[:100]}\nError: {e}")
+    
+    df['window'] = df['window'].apply(parse_window)
     return df
+
+# def load_data(data_path: str) -> pd.DataFrame:
+#     """
+#     Load and parse the prepared CSV data.
+    
+#     Args:
+#         data_path: Path to the CSV file
+    
+#     Returns:
+#         DataFrame with parsed windows
+#     """
+#     df = pd.read_csv(data_path)
+    
+#     # Convert string representation of nested lists back to actual lists
+#     def parse_window(window_str):
+#         try:
+#             # Try ast.literal_eval first
+#             return ast.literal_eval(window_str)
+#         except (ValueError, SyntaxError):
+#             # If that fails, use json.loads as fallback
+#             try:
+#                 return json.loads(window_str)
+#             except (json.JSONDecodeError, ValueError):
+#                 # Last resort: use eval with controlled namespace (only safe built-ins)
+#                 # This handles cases where the string contains list/dict literals
+#                 try:
+#                     return eval(window_str, {"__builtins__": {}})
+#                 except:
+#                     raise ValueError(f"Could not parse window: {window_str[:100]}")
+    
+#     df['window'] = df['window'].apply(parse_window)
+#     return df
 
 
 def prepare_window(window: list) -> np.ndarray:
