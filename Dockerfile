@@ -42,6 +42,11 @@ RUN cd /tmp && git clone https://github.com/google-research/timesfm.git && \
     cd /tmp/timesfm && \
     uv pip install -e .[torch]
 
+    # Clone and install lag--llama from repository with torch support using uv
+RUN cd /tmp && git clone https://github.com/time-series-foundation-models/lag-llama.git && \
+    cd /tmp/lag-llama && \
+    uv pip install -e .
+
 COPY --chown=${UID}:${GID} src/ src/
 
 CMD ["bash"]

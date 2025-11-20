@@ -104,7 +104,25 @@ Alternatively, use docker compose for sub-tasks (see below).
 ## Steps to Execute the Application to Produce Performance Metrics
 
 #### 1. Prepare data: 
-`python src/data_prep.py --tickers AAPL,GOOG --output data/prepared_data.csv --n 60`
+```bash
+# Auto-generate filename based on parameters (recommended)
+python src/data_prep.py --tickers AAPL,GOOG --n 60 -s 500
+
+# Or specify custom output filename
+python src/data_prep.py --tickers AAPL,GOOG --output data/my_custom_data.csv --n 60 -s 500
+```
+
+**Auto-generated filenames** follow the pattern: `data_{tickers}_{window_size}w_{samples}s_{timestamp}.csv`
+- Example: `data_AAPL_GOOG_60w_500s_20250118_143022.csv`
+
+Each dataset automatically generates a `_metadata.json` file that tracks the parameters used.
+
+**View available datasets:**
+```bash
+python src/data_manifest.py list              # List all prepared datasets
+python src/data_manifest.py show <filename>   # Show details of a specific dataset
+python src/data_manifest.py clean             # Keep 3 most recent, remove older ones
+```
  
 #### 2. Run baseline prediction/evaluation: 
 

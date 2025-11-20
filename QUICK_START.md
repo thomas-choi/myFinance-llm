@@ -17,6 +17,33 @@ Model implementations:
 
 ## Basic Commands
 
+### Prepare data from stock tickers
+
+**Auto-generate filename (recommended)** - Creates descriptive filenames with parameters:
+```bash
+python src/data_prep.py --tickers AAPL,GOOG --n 60 -s 500
+# Output: data_AAPL_GOOG_60w_500s_20250118_143022.csv
+# Plus metadata file: data_AAPL_GOOG_60w_500s_20250118_143022_metadata.json
+```
+
+**Or specify custom filename:**
+```bash
+python src/data_prep.py --tickers AAPL,GOOG --output data/prepared_data.csv --n 60 -s 500
+```
+
+**Track your datasets:**
+```bash
+python src/data_manifest.py list              # List all prepared datasets with parameters
+python src/data_manifest.py show <filename>   # View details of a specific dataset
+python src/data_manifest.py clean             # Cleanup: keep 3 most recent, remove older
+```
+
+**Arguments for `data_prep.py`:**
+- `--tickers`: Comma-separated ticker symbols (required)
+- `--output`: Output CSV file path (optional; auto-generated if not specified)
+- `--n`: Window size in days (default: 60)
+- `-s, --samples`: Number of data samples from today counting backward (optional)
+
 ### Evaluate TimesFM on test data
 ```bash
 python src/predict.py --model timesfm --data data/prepared_data.csv --eval --output metrics.json

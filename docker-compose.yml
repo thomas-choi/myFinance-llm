@@ -6,7 +6,7 @@ services:
     image: market-predictor
     volumes:
       - ./data:/app/data
-    command: python src/data_prep.py --tickers AAPL,GOOG --output data/prepared_data.csv --n 60
+    command: python src/data_prep.py --tickers AAPL,GOOG --output data/prepared_data.csv --n 60 -s 500
     deploy:
       resources:
         reservations:

@@ -7,10 +7,10 @@ from typing import Dict, Type, Optional
 from timesfm_model import TimesFmModel, PredictionModel
 import sys
 import os
+from Lag_Llama_model import LagLlamaModel
 
 # Import Lag-Llama model from parent directory
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-# from Lag_Llama_model import LagLlamaModel
+# sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
 class ModelRegistry:
@@ -65,4 +65,4 @@ class ModelRegistry:
 
 # Register default models
 ModelRegistry.register('timesfm', TimesFmModel)
-# ModelRegistry.register('lag_llama', LagLlamaModel)
+ModelRegistry.register('lag_llama', LagLlamaModel)

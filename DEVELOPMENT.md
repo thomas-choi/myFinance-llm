@@ -78,6 +78,24 @@ $EDITOR src/data_prep.py
 
 # In container, changes are immediately available
 $ python src/data_prep.py --help
+
+### Preparing Training Data
+
+To prepare data with a specific number of recent samples:
+
+```bash
+# Prepare 500 most recent data samples with 60-day windows
+python src/data_prep.py --tickers AAPL,GOOG --output data/prepared_data.csv --n 60 -s 500
+
+# Or use all available data
+python src/data_prep.py --tickers AAPL,GOOG --output data/prepared_data.csv --n 60
+```
+
+Arguments:
+- `--tickers`: Comma-separated ticker symbols (required)
+- `--output`: Output CSV file path (default: data/prepared_data.csv)
+- `--n`: Window size in days (default: 60)
+- `-s, --samples`: Number of data samples from today counting backward (optional)
 ```
 
 ### Installing New Dependencies
